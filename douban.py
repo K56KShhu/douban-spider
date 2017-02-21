@@ -1,23 +1,38 @@
-from urllib.request import urlopen
-from urllib.parse import quote
-from bs4 import BeautifulSoup
-# another wat of sorting
-# from operator import itemgetter
 import csv
+import time
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import quote
+from urllib.error import HTTPError
+# another wat of sorting
+from operator import itemgetter
 
 
 def getBooksInfo(tag):
     bookList = []
     pageNumber = 0
 
+    headers = [{"user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36"},
+               {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"},
+               {"user-agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:51.0) Gecko/20100101 Firefox/51.0"},
+               {"user-agent": "Mozilla/5.0 (MSIE 10.0; Windows NT 6.1; Trident/5.0"}]
+
     while True:
+        time.sleep(1.5)
         url = "https://book.douban.com/tag/" + quote(tag) + "?start=" + str(pageNumber * 20)
         pageNumber += 1
-        html = urlopen(url)
-        bs0bj = BeautifulSoup(html, "lxml")
+
+
+        try:
+            r = requests.get(url, headers=headers[pageNumber % len(headers)])
+        except HTTPError as e:
+            print(e)
+            continue
+
+        bs0bj = BeautifulSoup(r.text, "lxml")
         booksInOnePage = bs0bj.find("div", {"id":"subject_list"})
         print(pageNumber)
-        if pageNumber > 20:
+        if pageNumber > 50:
             break
         if booksInOnePage == None:
             break
@@ -36,12 +51,7 @@ def getBooksInfo(tag):
             except:
                 pubInfo = ' '
 
-            L = []
-            L.append(title)
-            L.append(ratingNums)
-            L.append(comments)
-            L.append(pubInfo)
-            bookList.append(L)
+            bookList.append([title, ratingNums, comments, pubInfo])
 
     return booksCleaner(bookList)
 
@@ -57,7 +67,7 @@ def booksCleaner(dirtyBooks):
         cleanRatingNums = dirtyBook[1].strip()
         M.append(cleanRatingNums)
         # comments
-        cleanComments = dirtyBook[2].strip(' (人评价)\n')
+        cleanComments = dirtyBook[2].strip(' (人评价)\n少于')
         M.append(cleanComments)
         # pubInfo
         pub = dirtyBook[3].split('/')
@@ -71,12 +81,31 @@ def booksCleaner(dirtyBooks):
 
 
 def printSortedBooks(books):
-#   for book in sorted(books, key=itemgetter(1), reverse=True):
-    for book in sorted(books, key=lambda t: t[1], reverse=True):
+#    for book in sorted(books, key=itemgetter(2), reverse=True):
+    for book in sorted(books, key=lambda t: int(t[2]), reverse=True):
         print(book)
         
 
+def saveToCsv(books, tag):
+    filename = "books_" + tag + ".csv"
+    path = "/home/xu/a-project/books-doubanSpider/" + filename
+    with open(path, "w") as f:
+        try:
+            writer = csv.writer(f)
+            writer.writerow(["name", "rating", "comments", "author/translator", "pub"])
+            for book in books:
+                writer.writerow(book)
+        finally:
+            f.close()
+        
 
+begin = time.time()
 
-bookList = getBooksInfo("童话")
+tag = "童话"
+bookList = getBooksInfo(tag)
 printSortedBooks(bookList)
+saveToCsv(bookList, tag)
+
+end = time.time()
+time = end - begin
+print("time: " + str(time))
