@@ -22,19 +22,17 @@ def getBooksInfo(tag):
         url = "https://book.douban.com/tag/" + quote(tag) + "?start=" + str(pageNumber * 20)
         pageNumber += 1
 
-
         try:
             r = requests.get(url, headers=headers[pageNumber % len(headers)])
         except HTTPError as e:
             print(e)
-            continue
 
         bs0bj = BeautifulSoup(r.text, "lxml")
         booksInOnePage = bs0bj.find("div", {"id":"subject_list"})
+
         print(pageNumber)
-        if pageNumber > 50:
-            break
-        if booksInOnePage == None:
+        stop = bs0bj.find("p", {"class":"pl2"}).get_text()
+        if stop == "没有找到符合条件的图书":
             break
         for book in booksInOnePage.findAll("li", {"class":"subject-item"}):
             title = book.find("h2").get_text()
