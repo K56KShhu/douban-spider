@@ -1,6 +1,8 @@
 from urllib.request import urlopen
 from urllib.parse import quote
 from bs4 import BeautifulSoup
+# another wat of sorting
+# from operator import itemgetter
 import csv
 
 
@@ -15,25 +17,33 @@ def getBooksInfo(tag):
         bs0bj = BeautifulSoup(html, "lxml")
         booksInOnePage = bs0bj.find("div", {"id":"subject_list"})
         print(pageNumber)
-        if pageNumber > 3:
+        if pageNumber > 20:
             break
         if booksInOnePage == None:
             break
-        else:
-            for book in booksInOnePage.findAll("li", {"class":"subject-item"}):
-                title = book.find("h2").get_text()
+        for book in booksInOnePage.findAll("li", {"class":"subject-item"}):
+            title = book.find("h2").get_text()
+            try:
                 ratingNums = book.find("span", {"class":"rating_nums"}).get_text()
+            except:
+                ratingNums = '0'
+            try:
                 comments = book.find("span", {"class":"pl"}).get_text()
+            except:
+                comments = '0'
+            try:
                 pubInfo = book.find("div", {"class":"pub"}).get_text()
+            except:
+                pubInfo = ' '
 
-                L = []
-                L.append(title)
-                L.append(ratingNums)
-                L.append(comments)
-                L.append(pubInfo)
-                bookList.append(L)
+            L = []
+            L.append(title)
+            L.append(ratingNums)
+            L.append(comments)
+            L.append(pubInfo)
+            bookList.append(L)
 
-    booksCleaner(bookList)
+    return booksCleaner(bookList)
 
 
 def booksCleaner(dirtyBooks):
@@ -41,13 +51,13 @@ def booksCleaner(dirtyBooks):
     for dirtyBook in dirtyBooks:
         # title
         M = []
-        cleanTitle = dirtyBook[0].strip()
+        cleanTitle = dirtyBook[0].replace(" ", "").replace("\n", "")
         M.append(cleanTitle)
         # ratingNums
         cleanRatingNums = dirtyBook[1].strip()
         M.append(cleanRatingNums)
         # comments
-        cleanComments = dirtyBook[2].strip('(人评价) ')
+        cleanComments = dirtyBook[2].strip(' (人评价)\n')
         M.append(cleanComments)
         # pubInfo
         pub = dirtyBook[3].split('/')
@@ -57,15 +67,16 @@ def booksCleaner(dirtyBooks):
         M.append(others)
         tidyBooks.append(M)
     
-    print(tidyBooks)
     return tidyBooks
 
 
-def printBooks(books):
-    for book in books:
+def printSortedBooks(books):
+#   for book in sorted(books, key=itemgetter(1), reverse=True):
+    for book in sorted(books, key=lambda t: t[1], reverse=True):
         print(book)
+        
 
 
 
 bookList = getBooksInfo("童话")
-printBooks(bookList)
+printSortedBooks(bookList)
