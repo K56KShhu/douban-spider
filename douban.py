@@ -4,7 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import quote
 from urllib.error import HTTPError
-# another wat of sorting
+# another way of sorting
 from operator import itemgetter
 
 
@@ -91,7 +91,7 @@ def saveToCsv(books, tag):
         try:
             writer = csv.writer(f)
             writer.writerow(["name", "rating", "comments", "author/translator", "pub"])
-            for book in books:
+            for book in sorted(books, key=lambda t: int(t[2]), reverse=True):
                 writer.writerow(book)
         finally:
             f.close()
